@@ -56,13 +56,27 @@ static void MX_ADC1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+ADC_HandleTypeDef hadc;
 
+float adcDelta = 1031.f / 4096.f;
+
+float getTemp(uint16_t *value) {
+	float V = (float)(*value & 0x0FFF) * adcDelta + 174.f;
+	return (V -  424) / 6.25;
+}
+
+void ADC_Init() {
+	hadc.Instance = ADC1;
+	hadc.Init.Resolution = ADC_RESOLUTION_12B;
+	hadc.Init.ContinuousConvMode = ENABLE;
+}
 /* USER CODE END 0 */
 
 /**
   * @brief  The application entry point.
   * @retval int
   */
+
 int main(void)
 {
   /* USER CODE BEGIN 1 */
@@ -73,7 +87,6 @@ int main(void)
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
-
   /* USER CODE BEGIN Init */
 
   /* USER CODE END Init */
@@ -107,6 +120,31 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
+	 HAL_ADC_Start(&hadc);
+	 HAL_ADC_PollForConversion(&hadc, 1000);
+
+	 adcValue = (uint16_t)HAL_ADC_GetValue(&hadc);
+
+	 temp = getTemp(&adcValue);
+	 //PIN 6 - ВЕНТИЛЯТОР, PIN 7 - РАДИАТОР
+
+	 if (temp > minRight && temp < maxLeft) {
+		 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
+		 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET);
+	 }
+
+	 if (temp <= minLeft) {
+		 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
+		 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET);
+	 }
+
+
+	 if (temp >= maxRight) {
+		 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
+		 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
+	 }
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
