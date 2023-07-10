@@ -58,12 +58,15 @@ static void MX_ADC1_Init(void);
 /* USER CODE BEGIN 0 */
 ADC_HandleTypeDef hadc;
 
-float adcDelta = 1031.f / 4096.f;
+int32_t adcDeltaFixed = 0b100000001110000; // 16496 - decimal part of 1031 / 4096. (1031 * 65536) << 12;
 
-float getTemp(uint16_t *value) {
-	float V = (float)(*value & 0x0FFF) * adcDelta + 174.f;
-	return (V -  424) / 6.25;
+int16_t getTemp(int16_t *value){
+  int32_t V = (((int32_t)(*value) * adcDeltaFixed) >> 16) + 174;
+  int32_t scale = 0b101000111101; // 2621 (1 << 16) / 25.
+  return (int16_t)((((V - 424) << 2) * scale) >> 16);
 }
+
+
 
 void ADC_Init() {
 	hadc.Instance = ADC1;
@@ -103,7 +106,7 @@ int main(void)
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
   uint16_t adcValue;
-  float temp;
+  uint16_t temp;
   float tempMin = 10.0f;
   float tempMax = 80.0f;
   float hystVal = 3.0f;
