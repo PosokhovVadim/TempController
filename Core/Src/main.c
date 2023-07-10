@@ -105,16 +105,15 @@ int main(void)
   MX_GPIO_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
-  uint16_t adcValue;
-  uint16_t temp;
-  float tempMin = 10.0f;
-  float tempMax = 80.0f;
-  float hystVal = 3.0f;
+  int16_t t, t_prev, adcValue;
+  int16_t tMin = 10;
+  int16_t tMax = 80;
+  int16_t hystVal = 3;
 
-  float minLeft = tempMin - hystVal;
-  float minRight = tempMin + hystVal;
-  float maxLeft = tempMax - hystVal;
-  float maxRight = tempMax + hystVal;
+  int16_t minLeft = tMin - hystVal;
+  int16_t minRight = tMin + hystVal;
+  int16_t maxLeft = tMax - hystVal;
+  int16_t maxRight = tMax + hystVal;
 
   ADC_Init();
   /* USER CODE END 2 */
@@ -127,27 +126,50 @@ int main(void)
 	 HAL_ADC_Start(&hadc);
 	 HAL_ADC_PollForConversion(&hadc, 1000);
 
-	 adcValue = (uint16_t)HAL_ADC_GetValue(&hadc);
+	 adcValue = (int16_t)HAL_ADC_GetValue(&hadc);
 
-	 temp = getTemp(&adcValue);
+	 t = getTemp(&adcValue);
 	 //PIN 6 - ВЕНТИЛЯТОР, PIN 7 - РАДИАТОР
-
-	 if (temp > minRight && temp < maxLeft) {
+	 if (t <= minLeft) {
 		 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
 		 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET);
 	 }
 
-	 if (temp <= minLeft) {
-		 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
-		 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET);
-	 }
-
-
-	 if (temp >= maxRight) {
+	 if (t >= maxRight) {
 		 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
 		 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
 	 }
 
+	 if (t >= minRight && t <= maxLeft) {
+		 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
+		 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
+	 }
+
+
+//	if (t >= minLeft && t <= maxLeft) {
+//		if (t_prev < minLeft ) {
+//			 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
+//			 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET);
+//		}
+//		if (t_prev > maxLeft) {
+//			 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
+//			 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
+//		}
+//	}
+//
+//	if (t >= minRight && t <= maxRight) {
+//		if (t_prev >= minRight) {
+//			 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
+//			 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
+//		}
+//		if (t_prev > maxRight) {
+//			 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_SET);
+//			 HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
+//		}
+//	}
+
+	 //if need:
+	 t_prev = t;
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
