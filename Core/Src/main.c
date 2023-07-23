@@ -115,36 +115,64 @@ void delay_uS(uint32_t uS) {
 void SPI_Transmit16Bit(uint16_t *pData, uint16_t Size) {
 
 	uint32_t startTime = 0x0000;
-	uint32_t value;
+	uint32_t value = *pData;
 	Size = Size >> 1;
 
-	for (uint16_t i = 0; i < Size; ++i) {
+	for (uint16_t i = 1; i < Size; ++i) {
 		value = *(pData + i);
-		for(uint16_t j = 15; j > 0; --j) {
-			bool bit = (value & (1 << (j - 1))) >> (j - 1);
+	}
 
-			//SET SCK to high
-			if (((GPIOC)->BSRR |= 1 << 1) == 0) {
-				(GPIOC)->BSRR |= 1 << 1;
-			}
 
-			// SET bit to MOSI
-			if (bit) {
-				(GPIOC)->BSRR |= 1 << 2;
-			} else {
-				(GPIOC)->BSRR &= ~(1 << 2);
-			}
+	//Serial transmit
+	//HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_RESET); // RESET NSS
+	GPIOC->BSRR = GPIO_BSRR_BR0; //RESET NSS
 
-			//SET SCK to low
-			if (((GPIOC)->BSRR |= 1 << 1) != 0) {
-				(GPIOC)->BSRR &= ~(1 << 1);
-			}
 
-			//Sleep
-			delay_uS(1);
+
+
+	for (uint16_t i = 1; i < Size; ++i) {
+		value = *(pData + i);
+
+	bool bit = (value & (1 << 15)) >> 15;
+
+	// SET bit to MOSI
+	if (bit) {
+		(GPIOC)->BSRR |= 1 << 2;
+	} else {
+		(GPIOC)->BSRR &= ~(1 << 2);
+	}
+
+	// sleep
+	delay_uS(1);
+
+	for(uint16_t j = 15; j > 0; --j) {
+
+		//SET SCK to high
+		if (((GPIOC)->BSRR |= 1 << 1) == 0) {
+			(GPIOC)->BSRR |= 1 << 1;
+			//GPIOC->LCKR &= ~(1 << 16);
 		}
 
+		bit = (value & (1 << (j - 1))) >> (j - 1);
+
+		//SET SCK to low
+		if (((GPIOC)->BSRR |= 1 << 1) != 0) {
+			(GPIOC)->BSRR &= ~(1 << 1);
+		}
+
+		// SET bit to MOSI
+		if (bit) {
+			(GPIOC)->BSRR |= 1 << 2;
+		} else {
+			(GPIOC)->BSRR &= ~(1 << 2);
+		}
+		//Sleep
+		delay_uS(1);
+
 	}
+	}
+
+	GPIOC->BSRR = GPIO_BSRR_BS0; //SET NSS
 }
 /* USER CODE END 0 */
 
